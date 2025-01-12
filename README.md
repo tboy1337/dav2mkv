@@ -41,7 +41,7 @@ python dav_converter.py --input path/to/file.dav --output path/to/output.mp4
 ### Batch Converting a Directory
 
 ```python
-python dav_converter.py --directory path/to/directory  # For batch conversion
+python dav_converter.py --directory path/to/directory
 ```
 
 ## Contributing
