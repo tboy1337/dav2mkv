@@ -19,7 +19,7 @@ A lightweight Python utility for converting DAV video files (commonly used in CC
 
 ## Installation
 
-1. Clone the repository:
+1. Download or clone the repository:
 ```bash
 git clone https://github.com/yourusername/dav2mp4-converter.git
 cd dav2mp4-converter
