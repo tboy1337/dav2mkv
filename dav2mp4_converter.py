@@ -104,8 +104,3 @@ def batch_convert_directory(input_dir):
         convert_dav_to_mp4(str(dav_file))
 
 if __name__ == "__main__":
-    # Example usage for single file
-    # convert_dav_to_mp4("input.dav", "output.mp4")
-    
-    # Example usage for directory
-    # batch_convert_directory("path/to/directory")
