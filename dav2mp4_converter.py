@@ -4,7 +4,7 @@ from pathlib import Path
 
 def convert_dav_to_mp4(input_file, output_file=None):
     """
-    Convert a .dav file to .mp4 format
+    Convert a .dav file to .mp4 format with high quality settings
     
     Args:
         input_file (str): Path to input .dav file
@@ -35,9 +35,24 @@ def convert_dav_to_mp4(input_file, output_file=None):
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        # Create VideoWriter object
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
+        # Try to use H.264 codec first (better quality)
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
+            out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
+            if not out.isOpened():
+                raise Exception("H.264 codec not available")
+        except:
+            try:
+                # Fallback to H.265 (HEVC)
+                fourcc = cv2.VideoWriter_fourcc(*'hvc1')
+                out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
+                if not out.isOpened():
+                    raise Exception("H.265 codec not available")
+            except:
+                # Final fallback to MPEG-4
+                print("Warning: Using fallback MPEG-4 codec. Quality may be reduced.")
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
         
         # Process the video frame by frame
         frame_count = 0
@@ -46,7 +61,7 @@ def convert_dav_to_mp4(input_file, output_file=None):
             if not ret:
                 break
                 
-            # Write the frame
+            # Write the frame without any compression
             out.write(frame)
             
             # Update progress
