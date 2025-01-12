@@ -35,19 +35,19 @@ pip install -U opencv-python
 ### Converting a Single File
 
 ```bash
-python dav_converter.py --input path/to/file.dav --output path/to/output.mp4
+python dav2mp4.py --input path/to/file.dav --output path/to/output.mp4
 ```
 
 or
 
 ```bash
-python dav_converter.py --input path/to/file.dav  # Output filename and location will be the same as the input.
+python dav2mp4.py --input path/to/file.dav  # Output filename and location will be the same as the input.
 ```
 
 ### Batch Converting a Directory
 
 ```bash
-python dav_converter.py --directory path/to/directory
+python dav2mp4.py --directory path/to/directory
 ```
 
 ## Contributing
