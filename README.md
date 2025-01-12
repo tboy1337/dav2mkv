@@ -60,17 +60,6 @@ python dav_converter.py --input path/to/file.dav --output path/to/output.mp4
 python dav_converter.py --directory path/to/directory  # For batch conversion
 ```
 
-## Project Structure
-
-```
-dav2mp4-converter/
-├── dav_converter.py      # Main conversion script
-├── requirements.txt      # Project dependencies
-├── tests/               # Test files
-├── examples/            # Example usage
-└── README.md           # This file
-```
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
