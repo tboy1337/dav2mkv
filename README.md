@@ -27,7 +27,7 @@ cd dav2mp4-converter
 
 2. Install the required dependencies:
 ```bash
-pip install -U opencv-python
+pip install -U opencv-python numpy
 ```
 
 ## Usage
