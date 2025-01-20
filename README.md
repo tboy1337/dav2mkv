@@ -1,97 +1,113 @@
-# DAV to MP4 Converter
+# DAV Video Converter
 
-## Overview
-This project provides a Python script to convert `.dav` files to `.mp4` format using OpenCV with high-quality settings. It supports parallel processing for efficient conversion, making it suitable for large video files or batch processing.
-
----
+A simple Python script for converting DAV video files (and other formats) to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion.
 
 ## Features
-- **High-quality Conversion:** Utilizes H.264 and H.265 codecs for optimal video quality.
-- **Parallel Processing:** Processes video frames in chunks using multiple threads, speeding up conversion.
-- **Batch Processing:** Convert multiple `.dav` files in a directory concurrently.
-- **System-Friendly:** Reserves two CPU cores for other system processes during execution.
-- **Progress Tracking:** Displays real-time progress for frame reading and writing.
 
----
+- Direct stream copy (no quality loss)
+- Maintains all original streams (video, audio, subtitles)
+- Batch processing with parallel conversion support
+- Detailed video information display
+- Progress tracking
+- Support for both MKV and MP4 output formats
+- Support for various input video formats
 
 ## Requirements
-- Python 3.7 or higher
-- OpenCV library
-- NumPy library
 
-Install the dependencies using pip:
-```bash
-pip install opencv-python-headless numpy
-```
+- Python 3.4 or higher
+- FFmpeg installed on your system
 
----
+No additional Python packages required!
+
+## Installation
+
+1. Install FFmpeg:
+
+   **Ubuntu/Debian:**
+   ```bash
+   sudo apt-get update
+   sudo apt-get install ffmpeg
+   ```
+
+   **macOS (using Homebrew):**
+   ```bash
+   brew install ffmpeg
+   ```
+
+   **Windows (using Chocolatey):**
+   ```bash
+   choco install ffmpeg
+   ```
+   Or download directly from [FFmpeg's official website](https://ffmpeg.org/download.html)
+
+2. Clone or download this repository:
+   ```bash
+   git clone [repository-url]
+   cd dav-converter
+   ```
 
 ## Usage
-### Command-line Arguments
-Run the script with the following arguments:
 
-- **Single File Conversion:**
-  ```bash
-  python dav2mp4.py -f <input_file.dav> -o <output_file.mp4>
-  ```
-  - `-f` or `--file`: Path to the input `.dav` file (required).
-  - `-o` or `--output`: Path to the output `.mp4` file (optional).
-
-- **Batch Directory Conversion:**
-  ```bash
-  python dav2mp4.py -d <input_directory> -c <max_concurrent>
-  ```
-  - `-d` or `--directory`: Path to the directory containing `.dav` files (required).
-  - `-c` or `--concurrent`: Maximum number of concurrent file conversions (optional).
-
----
-
-## Example
 ### Convert a Single File
+
 ```bash
-python dav2mp4.py -f example.dav -o example.mp4
+# Basic conversion (outputs to MKV)
+python dav_converter.py -f input.dav
+
+# Specify output file
+python dav_converter.py -f input.dav -o output.mkv
+
+# Convert to MP4 instead of MKV
+python dav_converter.py -f input.dav --container mp4
 ```
 
-### Batch Convert a Directory
+### Convert Multiple Files
+
 ```bash
-python dav2mp4.py -d /path/to/dav/files -c 4
+# Convert all video files in a directory
+python dav_converter.py -d /path/to/videos
+
+# Specify number of concurrent conversions
+python dav_converter.py -d /path/to/videos -c 4
+
+# Convert directory to MP4 format
+python dav_converter.py -d /path/to/videos --container mp4
 ```
 
----
+### Command Line Arguments
 
-## Implementation Details
-1. **Video Reading and Writing:**
-   - Utilizes OpenCV's `cv2.VideoCapture` and `cv2.VideoWriter` for handling video streams.
-   - Fallback codecs ensure compatibility if H.264 and H.265 are unavailable.
+- `-f, --file`: Single video file to convert
+- `-d, --directory`: Directory containing video files to convert
+- `-o, --output`: Output file name (only for single file conversion)
+- `-c, --concurrent`: Maximum number of concurrent conversions for directory processing
+- `--container`: Output container format (choices: 'mkv', 'mp4', default: 'mkv')
 
-2. **Parallel Frame Processing:**
-   - Frames are processed in chunks using `ThreadPoolExecutor` for improved performance.
-   - Separate threads handle frame reading and writing to avoid bottlenecks.
+## How It Works
 
-3. **Batch Conversion:**
-   - Processes all `.dav` files in a directory.
-   - Limits the number of concurrent conversions to avoid overwhelming system resources.
+The script uses FFmpeg's stream copy feature (`-c copy`) to copy the video, audio, and subtitle streams directly from the source to the destination container without re-encoding. This ensures:
 
----
+1. Perfect quality preservation (bit-for-bit identical)
+2. Very fast conversion speed (no encoding required)
+3. All streams (video, audio, subtitles) are preserved
+4. Original metadata is maintained
 
 ## Error Handling
-- Verifies input file and directory existence.
-- Provides fallback options for codecs if high-quality codecs are unavailable.
-- Handles exceptions gracefully with detailed error messages.
 
----
-
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
-
----
+The script includes several error handling features:
+- Input file existence verification
+- Output file verification
+- FFmpeg error catching and reporting
+- Progress tracking for batch operations
 
 ## Contributing
-Contributions are welcome! Please submit a pull request or open an issue to discuss your ideas.
 
----
+Feel free to open issues or submit pull requests if you have suggestions for improvements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
-- [OpenCV](https://opencv.org/) for video processing capabilities.
-- Python community for its robust standard libraries.
 
+- FFmpeg team for their excellent video processing tools
+- All contributors to this project
