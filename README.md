@@ -36,7 +36,11 @@ No additional Python packages required!
 
    **Windows (using Chocolatey):**
    ```bash
-   choco install ffmpeg
+   choco install ffmpeg-full
+   ```
+   **Windows (using winget):**
+   ```bash
+   winget install ffmpeg
    ```
    Or download directly from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
 
