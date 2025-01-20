@@ -1,202 +1,178 @@
-import cv2
+import subprocess
 import os
 from pathlib import Path
-import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import numpy as np
-from queue import Queue
-from threading import Thread
 import argparse
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
 
-def get_optimal_worker_count():
+def get_video_info(input_file):
     """
-    Calculate optimal number of worker threads while reserving cores for the OS
-    Returns number of workers, leaving at least 2 cores free for system processes
+    Get video information using ffprobe
+    Returns dict with video details or None if failed
     """
-    total_cores = multiprocessing.cpu_count()
-    # Reserve 2 cores for OS and other processes, minimum 1 worker
-    return max(1, total_cores - 2)
+    cmd = [
+        'ffprobe',
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_format',
+        '-show_streams',
+        input_file
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return json.loads(result.stdout)
+    except Exception as e:
+        print(f"Warning: Could not read video info: {str(e)}")
+        return None
 
-def process_frame_chunk(frames):
-    """Process a chunk of frames in parallel"""
-    return [frame for frame in frames if frame is not None]
-
-def frame_reader(cap, frame_queue, total_frames):
-    """Read frames from the video file and put them in the queue"""
-    frame_count = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frame_queue.put(frame)
-        frame_count += 1
-        if frame_count % 100 == 0:
-            progress = (frame_count / total_frames) * 100
-            print(f"Reading Progress: {progress:.1f}%")
-    frame_queue.put(None)  # Signal end of frames
-
-def frame_writer(out, frame_queue, total_frames):
-    """Write frames from the queue to the output file"""
-    frame_count = 0
-    while True:
-        frame = frame_queue.get()
-        if frame is None:
-            break
-        out.write(frame)
-        frame_count += 1
-        if frame_count % 100 == 0:
-            progress = (frame_count / total_frames) * 100
-            print(f"Writing Progress: {progress:.1f}%")
-
-def convert_dav_to_mp4(input_file, output_file=None, chunk_size=32):
+def convert_video(input_file, output_file=None, container='mkv'):
     """
-    Convert a .dav file to .mp4 format with high quality settings using parallel processing
+    Convert video using direct stream copy
     
     Args:
-        input_file (str): Path to input .dav file
-        output_file (str, optional): Path for output .mp4 file. If None, uses same name as input
-        chunk_size (int): Number of frames to process in parallel
+        input_file (str): Path to input video file
+        output_file (str, optional): Path for output file
+        container (str): Output container format ('mkv' or 'mp4')
     
     Returns:
         bool: True if conversion successful, False otherwise
     """
     try:
-        # Validate input file
         if not os.path.exists(input_file):
             print(f"Error: Input file '{input_file}' not found.")
             return False
-            
+
         # Create output filename if not provided
         if output_file is None:
-            output_file = str(Path(input_file).with_suffix('.mp4'))
+            output_file = str(Path(input_file).with_suffix(f'.{container}'))
+
+        # Get video info before conversion
+        print(f"Analyzing {input_file}...")
+        info = get_video_info(input_file)
+        
+        if info:
+            # Print source video details
+            print("\nSource video details:")
+            streams = {
+                'video': 0,
+                'audio': 0,
+                'subtitle': 0,
+                'data': 0
+            }
             
-        # Open the input video
-        cap = cv2.VideoCapture(input_file)
-        if not cap.isOpened():
-            print(f"Error: Could not open input file '{input_file}'")
+            for stream in info.get('streams', []):
+                stream_type = stream.get('codec_type', 'unknown')
+                streams[stream_type] = streams.get(stream_type, 0) + 1
+                
+                if stream_type == 'video':
+                    print(f"Video: {stream.get('codec_name', 'unknown')} "
+                          f"{stream.get('width', '?')}x{stream.get('height', '?')} @ "
+                          f"{stream.get('r_frame_rate', '?')}fps")
+                elif stream_type == 'audio':
+                    print(f"Audio: {stream.get('codec_name', 'unknown')} "
+                          f"{stream.get('channels', '?')} channels @ "
+                          f"{stream.get('sample_rate', '?')}Hz")
+            
+            print(f"\nStreams found: "
+                  f"{streams['video']} video, "
+                  f"{streams['audio']} audio, "
+                  f"{streams['subtitle']} subtitle, "
+                  f"{streams['data']} data")
+
+        # Perform the conversion
+        print(f"\nConverting to {container.upper()}...")
+        cmd = [
+            'ffmpeg',
+            '-i', input_file,
+            '-c', 'copy',        # Copy all streams without re-encoding
+            '-map', '0',         # Include all streams
+            '-y',                # Overwrite output if exists
+            output_file
+        ]
+        
+        # Run conversion
+        process = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if process.returncode == 0:
+            print(f"Conversion successful! Output saved to: {output_file}")
+            
+            # Verify output file exists and has size
+            if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
+                print(f"Output file verified ({os.path.getsize(output_file) / (1024*1024):.1f} MB)")
+                return True
+            else:
+                print("Error: Output file is missing or empty")
+                return False
+        else:
+            print(f"Conversion failed with error: {process.stderr}")
             return False
             
-        # Get video properties
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        # Initialize video writer with best available codec
-        try:
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
-            out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
-            if not out.isOpened():
-                raise Exception("H.264 codec not available")
-        except:
-            try:
-                fourcc = cv2.VideoWriter_fourcc(*'hvc1')  # H.265 codec
-                out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
-                if not out.isOpened():
-                    raise Exception("H.265 codec not available")
-            except:
-                print("Warning: Using fallback MPEG-4 codec. Quality may be reduced.")
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
-
-        # Set up queues for parallel processing
-        read_queue = Queue(maxsize=chunk_size * 2)
-        write_queue = Queue(maxsize=chunk_size * 2)
-        
-        # Start reader and writer threads
-        reader_thread = Thread(target=frame_reader, args=(cap, read_queue, total_frames))
-        writer_thread = Thread(target=frame_writer, args=(out, write_queue, total_frames))
-        
-        reader_thread.start()
-        writer_thread.start()
-
-        # Process frames in parallel using ThreadPoolExecutor
-        num_workers = get_optimal_worker_count()
-        print(f"Processing with {num_workers} workers (reserved 2 cores for system)")
-        
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            while True:
-                frames = []
-                for _ in range(chunk_size):
-                    frame = read_queue.get()
-                    if frame is None:
-                        break
-                    frames.append(frame)
-                
-                if not frames:
-                    break
-                    
-                # Process frame chunk in parallel
-                processed_frames = executor.submit(process_frame_chunk, frames).result()
-                
-                # Put processed frames in write queue
-                for frame in processed_frames:
-                    write_queue.put(frame)
-        
-        # Signal end of processing
-        write_queue.put(None)
-        
-        # Wait for threads to finish
-        reader_thread.join()
-        writer_thread.join()
-        
-        # Release everything
-        cap.release()
-        out.release()
-        
-        print(f"Conversion completed! Output saved to: {output_file}")
-        return True
-        
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return False
 
-def batch_convert_directory(input_dir, max_concurrent=None):
+def batch_convert_directory(input_dir, container='mkv', max_concurrent=None):
     """
-    Convert all .dav files in a directory to .mp4 using parallel processing
+    Convert all video files in a directory
     
     Args:
-        input_dir (str): Path to directory containing .dav files
+        input_dir (str): Path to directory containing videos
+        container (str): Output container format ('mkv' or 'mp4')
         max_concurrent (int, optional): Maximum number of concurrent conversions
     """
     input_dir = Path(input_dir)
     if not input_dir.exists():
         print(f"Error: Directory '{input_dir}' not found.")
         return
-        
-    dav_files = list(input_dir.glob("*.dav"))
-    if not dav_files:
-        print("No .dav files found in the directory.")
+
+    # Look for common video file extensions
+    video_files = []
+    for ext in ['.dav', '.avi', '.mp4', '.mkv', '.mov', '.wmv']:
+        video_files.extend(input_dir.glob(f"*{ext}"))
+    
+    if not video_files:
+        print("No video files found in the directory.")
         return
     
     if max_concurrent is None:
-        # Just reserve 2 cores, no extra division
-        max_concurrent = max(1, multiprocessing.cpu_count() - 2)
+        max_concurrent = max(1, multiprocessing.cpu_count() - 1)
         
-    print(f"Found {len(dav_files)} .dav files to convert.")
-    print(f"Processing up to {max_concurrent} files concurrently (reserved 2 cores for system)")
+    print(f"Found {len(video_files)} video files to convert.")
+    print(f"Processing up to {max_concurrent} files concurrently")
     
     with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
-        futures = [executor.submit(convert_dav_to_mp4, str(dav_file)) for dav_file in dav_files]
+        futures = [
+            executor.submit(convert_video, str(video_file), container=container)
+            for video_file in video_files
+        ]
+        
+        completed = 0
         for future in as_completed(futures):
+            completed += 1
             try:
-                future.result()
+                success = future.result()
+                print(f"Progress: {completed}/{len(video_files)} files processed")
             except Exception as e:
                 print(f"Conversion failed: {str(e)}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Convert DAV files to MP4 format with parallel processing.')
+    parser = argparse.ArgumentParser(
+        description='Convert video files using direct stream copy for maximum quality.'
+    )
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-f', '--file', help='Single DAV file to convert')
-    group.add_argument('-d', '--directory', help='Directory containing DAV files to convert')
+    group.add_argument('-f', '--file', help='Single video file to convert')
+    group.add_argument('-d', '--directory', help='Directory containing video files to convert')
     parser.add_argument('-o', '--output', help='Output file name (only for single file conversion)')
-    parser.add_argument('-c', '--concurrent', type=int, help='Maximum number of concurrent conversions for directory processing')
+    parser.add_argument('-c', '--concurrent', type=int, 
+                       help='Maximum number of concurrent conversions for directory processing')
+    parser.add_argument('--container', choices=['mkv', 'mp4'], default='mkv',
+                       help='Output container format (default: mkv)')
     
     args = parser.parse_args()
     
     if args.file:
-        # Single file conversion
-        convert_dav_to_mp4(args.file, args.output)
+        convert_video(args.file, args.output, args.container)
     else:
-        # Directory conversion
-        batch_convert_directory(args.directory, args.concurrent)
+        batch_convert_directory(args.directory, args.container, args.concurrent)
