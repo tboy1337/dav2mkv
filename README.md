@@ -38,7 +38,7 @@ No additional Python packages required!
    ```bash
    choco install ffmpeg
    ```
-   Or download directly from [FFmpeg's official website](https://ffmpeg.org/download.html)
+   Or download directly from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
 
 2. Clone or download this repository:
    ```bash
