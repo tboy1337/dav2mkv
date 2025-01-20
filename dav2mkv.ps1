@@ -1,6 +1,3 @@
-# Video conversion script using ffmpeg
-# Requires ffmpeg to be installed and accessible in PATH
-
 function Get-VideoInfo {
     param(
         [Parameter(Mandatory)]
