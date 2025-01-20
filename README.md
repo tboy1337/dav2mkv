@@ -47,7 +47,7 @@ No additional Python packages required!
 2. Clone or download this repository:
    ```bash
    git clone https://github.com/tboy1337/dav2mkv
-   cd dav-converter
+   cd dav2mkv
    ```
 
 ## Usage
@@ -110,7 +110,6 @@ Feel free to open issues or submit pull requests if you have suggestions for imp
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## Acknowledgments
 
 - FFmpeg team for their excellent video processing tools
