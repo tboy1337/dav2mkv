@@ -46,7 +46,7 @@ No additional Python packages required!
 
 2. Clone or download this repository:
    ```bash
-   git clone [repository-url]
+   git clone https://github.com/tboy1337/dav2mkv
    cd dav-converter
    ```
 
