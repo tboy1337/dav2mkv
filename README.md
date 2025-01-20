@@ -56,26 +56,26 @@ No additional Python packages required!
 
 ```bash
 # Basic conversion (outputs to MKV)
-python dav_converter.py -f input.dav
+python dav2mkv.py -f input.dav
 
 # Specify output file
-python dav_converter.py -f input.dav -o output.mkv
+python dav2mkv.py -f input.dav -o output.mkv
 
 # Convert to MP4 instead of MKV
-python dav_converter.py -f input.dav --container mp4
+python dav2mkv.py -f input.dav --container mp4
 ```
 
 ### Convert Multiple Files
 
 ```bash
 # Convert all video files in a directory
-python dav_converter.py -d /path/to/videos
+python dav2mkv.py -d /path/to/videos
 
 # Specify number of concurrent conversions
-python dav_converter.py -d /path/to/videos -c 4
+python dav2mkv.py -d /path/to/videos -c 4
 
 # Convert directory to MP4 format
-python dav_converter.py -d /path/to/videos --container mp4
+python dav2mkv.py -d /path/to/videos --container mp4
 ```
 
 ### Command Line Arguments
