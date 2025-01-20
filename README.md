@@ -1,59 +1,97 @@
-# dav2mp4-converter
+# DAV to MP4 Converter
 
-A lightweight Python utility for converting DAV video files (commonly used in CCTV systems) to MP4 format. Built with OpenCV, this tool supports both single file conversion and batch processing.
+## Overview
+This project provides a Python script to convert `.dav` files to `.mp4` format using OpenCV with high-quality settings. It supports parallel processing for efficient conversion, making it suitable for large video files or batch processing.
+
+---
 
 ## Features
+- **High-quality Conversion:** Utilizes H.264 and H.265 codecs for optimal video quality.
+- **Parallel Processing:** Processes video frames in chunks using multiple threads, speeding up conversion.
+- **Batch Processing:** Convert multiple `.dav` files in a directory concurrently.
+- **System-Friendly:** Reserves two CPU cores for other system processes during execution.
+- **Progress Tracking:** Displays real-time progress for frame reading and writing.
 
-- Convert single DAV files to MP4 format
-- Batch conversion of entire directories
-- Progress tracking during conversion
-- Preserve original video properties (FPS, resolution)
-- Simple command-line interface
-- Error handling and validation
-- Automatic output filename generation
+---
 
-## Prerequisites
+## Requirements
+- Python 3.7 or higher
+- OpenCV library
+- NumPy library
 
-- Python 3.6 or higher
-- OpenCV (opencv-python)
-
-## Installation
-
-1. Download or clone the repository:
+Install the dependencies using pip:
 ```bash
-git clone https://github.com/yourusername/dav2mp4-converter.git
-cd dav2mp4-converter
+pip install opencv-python-headless numpy
 ```
 
-2. Install the required dependencies:
-```bash
-pip install -U opencv-python numpy
-```
+---
 
 ## Usage
+### Command-line Arguments
+Run the script with the following arguments:
 
-### Converting a Single File
+- **Single File Conversion:**
+  ```bash
+  python dav2mp4.py -f <input_file.dav> -o <output_file.mp4>
+  ```
+  - `-f` or `--file`: Path to the input `.dav` file (required).
+  - `-o` or `--output`: Path to the output `.mp4` file (optional).
 
+- **Batch Directory Conversion:**
+  ```bash
+  python dav2mp4.py -d <input_directory> -c <max_concurrent>
+  ```
+  - `-d` or `--directory`: Path to the directory containing `.dav` files (required).
+  - `-c` or `--concurrent`: Maximum number of concurrent file conversions (optional).
+
+---
+
+## Example
+### Convert a Single File
 ```bash
-python dav2mp4.py --input path/to/file.dav --output path/to/output.mp4
+python dav2mp4.py -f example.dav -o example.mp4
 ```
 
-or
-
+### Batch Convert a Directory
 ```bash
-python dav2mp4.py --input path/to/file.dav  # Output filename and location will be the same as the input.
+python dav2mp4.py -d /path/to/dav/files -c 4
 ```
 
-### Batch Converting a Directory
+---
 
-```bash
-python dav2mp4.py --directory path/to/directory
-```
+## Implementation Details
+1. **Video Reading and Writing:**
+   - Utilizes OpenCV's `cv2.VideoCapture` and `cv2.VideoWriter` for handling video streams.
+   - Fallback codecs ensure compatibility if H.264 and H.265 are unavailable.
 
-## Contributing
+2. **Parallel Frame Processing:**
+   - Frames are processed in chunks using `ThreadPoolExecutor` for improved performance.
+   - Separate threads handle frame reading and writing to avoid bottlenecks.
 
-Contributions are welcome! Please feel free to submit a Pull Request.  For major changes, please open an issue first to discuss what you would like to change.
+3. **Batch Conversion:**
+   - Processes all `.dav` files in a directory.
+   - Limits the number of concurrent conversions to avoid overwhelming system resources.
+
+---
+
+## Error Handling
+- Verifies input file and directory existence.
+- Provides fallback options for codecs if high-quality codecs are unavailable.
+- Handles exceptions gracefully with detailed error messages.
+
+---
 
 ## License
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+---
+
+## Contributing
+Contributions are welcome! Please submit a pull request or open an issue to discuss your ideas.
+
+---
+
+## Acknowledgments
+- [OpenCV](https://opencv.org/) for video processing capabilities.
+- Python community for its robust standard libraries.
+
