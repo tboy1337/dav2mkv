@@ -1,6 +1,6 @@
 # DAV Video Converter
 
-A simple Python script for converting DAV video files (and other formats) to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion.
+A versatile tool for converting DAV video files (and other formats) to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion. Versions of the script are available for Python, Windows Batch, PowerShell, and Bash environments.
 
 ## Features
 
@@ -9,104 +9,96 @@ A simple Python script for converting DAV video files (and other formats) to MKV
 - Batch processing with parallel conversion support
 - Detailed video information display
 - Progress tracking
-- Support for both MKV and MP4 output formats
-- Support for various input video formats
+- Cross-platform compatibility
 
-## Requirements
+## Prerequisites
 
-- Python 3.4 or higher
-- FFmpeg installed on your system
+1. **FFmpeg**: Ensure FFmpeg is installed and available in your system's PATH.
+2. **Python Environment**: Required for the Python version of the script.
 
-No additional Python packages required!
+## Usage Instructions
 
-## Installation
+### 1. Python Script (`dav2mkv.py`)
 
-1. Install FFmpeg:
+#### Requirements:
+- Python 3.x
 
-   **Ubuntu/Debian:**
+#### Steps:
+1. Install Python if not already installed.
+2. Run the script using the following command:
    ```bash
-   sudo apt-get update
-   sudo apt-get install ffmpeg
+   python dav2mkv.py [input_folder] [output_folder]
+   ```
+3. Example:
+   ```bash
+   python dav2mkv.py ./input_videos ./converted_videos
    ```
 
-   **macOS (using Homebrew):**
-   ```bash
-   brew install ffmpeg
+### 2. Windows Batch Script (`dav2mkv.cmd`)
+
+#### Requirements:
+- Windows operating system
+
+#### Steps:
+1. Open a Command Prompt.
+2. Navigate to the folder containing `dav2mkv.cmd`.
+3. Run the script using the following command:
+   ```cmd
+   dav2mkv.cmd [input_folder] [output_folder]
+   ```
+4. Example:
+   ```cmd
+   dav2mkv.cmd C:\input_videos C:\converted_videos
    ```
 
-   **Windows (using Chocolatey):**
-   ```bash
-   choco install ffmpeg-full
+### 3. PowerShell Script (`dav2mkv.ps1`)
+
+#### Requirements:
+- PowerShell 5.0 or later
+
+#### Steps:
+1. Open PowerShell.
+2. Navigate to the folder containing `dav2mkv.ps1`.
+3. Run the script using the following command:
+   ```powershell
+   .\dav2mkv.ps1 -InputFolder [input_folder] -OutputFolder [output_folder]
    ```
-   **Windows (using winget):**
-   ```bash
-   winget install ffmpeg
-   ```
-   Or download directly from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
-
-2. Clone or download this repository:
-   ```bash
-   git clone https://github.com/tboy1337/dav2mkv
-   cd dav2mkv
+4. Example:
+   ```powershell
+   .\dav2mkv.ps1 -InputFolder C:\input_videos -OutputFolder C:\converted_videos
    ```
 
-## Usage
+### 4. Bash Script (`dav2mkv.sh`)
 
-### Convert a Single File
+#### Requirements:
+- Linux or macOS operating system
+- Bash shell
 
-```bash
-# Basic conversion (outputs to MKV)
-python dav2mkv.py -f input.dav
+#### Steps:
+1. Open a terminal.
+2. Navigate to the folder containing `dav2mkv.sh`.
+3. Make the script executable:
+   ```bash
+   chmod +x dav2mkv.sh
+   ```
+4. Run the script using the following command:
+   ```bash
+   ./dav2mkv.sh [input_folder] [output_folder]
+   ```
+5. Example:
+   ```bash
+   ./dav2mkv.sh ./input_videos ./converted_videos
+   ```
 
-# Specify output file
-python dav2mkv.py -f input.dav -o output.mkv
+## Notes
 
-# Convert to MP4 instead of MKV
-python dav2mkv.py -f input.dav --container mp4
-```
-
-### Convert Multiple Files
-
-```bash
-# Convert all video files in a directory
-python dav2mkv.py -d /path/to/videos
-
-# Specify number of concurrent conversions
-python dav2mkv.py -d /path/to/videos -c 4
-
-# Convert directory to MP4 format
-python dav2mkv.py -d /path/to/videos --container mp4
-```
-
-### Command Line Arguments
-
-- `-f, --file`: Single video file to convert
-- `-d, --directory`: Directory containing video files to convert
-- `-o, --output`: Output file name (only for single file conversion)
-- `-c, --concurrent`: Maximum number of concurrent conversions for directory processing
-- `--container`: Output container format (choices: 'mkv', 'mp4', default: 'mkv')
-
-## How It Works
-
-The script uses FFmpeg's stream copy feature (`-c copy`) to copy the video, audio, and subtitle streams directly from the source to the destination container without re-encoding. This ensures:
-
-1. Perfect quality preservation (bit-for-bit identical)
-2. Very fast conversion speed (no encoding required)
-3. All streams (video, audio, subtitles) are preserved
-4. Original metadata is maintained
-
-## Error Handling
-
-The script includes several error handling features:
-- Input file existence verification
-- Output file verification
-- FFmpeg error catching and reporting
-- Progress tracking for batch operations
-
-## Contributing
-
-Feel free to open issues or submit pull requests if you have suggestions for improvements or bug fixes.
+- Replace `[input_folder]` and `[output_folder]` with the actual paths to your input and output directories.
+- Ensure that FFmpeg is correctly installed and accessible from the command line for all script versions.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.txt).
+This project is licensed under the MIT License. See the `LICENSE.txt` file for details.
+
+## Contributions
+
+Contributions, issues, and feature requests are welcome! Feel free to fork this repository and submit pull requests.
