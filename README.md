@@ -8,7 +8,7 @@ A versatile tool for converting DAV video files (and other formats) to MKV or MP
 - Maintains all original streams (video, audio, subtitles)
 - Batch processing with parallel conversion support
 - Convert a single file or an entire folder of files
-- Specify the output container format (MKV or MP4)
+- Specify the output container format (MKV or MP4, default is MKV)
 - Display detailed video information before conversion
 - Progress tracking
 - Cross-platform compatibility
@@ -58,15 +58,15 @@ FFmpeg can be installed using various package managers or directly from its webs
 1. Install Python if not already installed.
 2. Run the script using the following command:
    ```bash
-   python dav2mkv.py [input_path] [output_folder] --container [container]
+   python dav2mkv.py [input_path] [output_folder] [--container container]
    ```
    - `input_path`: Path to a single file or a folder containing multiple files.
    - `output_folder`: Folder where converted files will be saved.
-   - `container`: Specify the output container format (`mkv` or `mp4`).
+   - `--container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
 
 3. Example:
    ```bash
-   python dav2mkv.py ./input_videos ./converted_videos --container mkv
+   python dav2mkv.py ./input_videos ./converted_videos --container mp4
    ```
 
 ### 2. Windows Batch Script (`dav2mkv.cmd`)
@@ -83,11 +83,11 @@ FFmpeg can be installed using various package managers or directly from its webs
    ```
    - `input_path`: Path to a single file or a folder containing multiple files.
    - `output_folder`: Folder where converted files will be saved.
-   - `container`: Specify the output container format (`mkv` or `mp4`).
+   - `container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
 
 4. Example:
    ```batch
-   dav2mkv.cmd C:\input_videos C:\converted_videos mkv
+   dav2mkv.cmd C:\input_videos C:\converted_videos mp4
    ```
 
 ### 3. PowerShell Script (`dav2mkv.ps1`)
@@ -104,11 +104,11 @@ FFmpeg can be installed using various package managers or directly from its webs
    ```
    - `InputPath`: Path to a single file or a folder containing multiple files.
    - `OutputFolder`: Folder where converted files will be saved.
-   - `Container`: Specify the output container format (`mkv` or `mp4`).
+   - `Container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
 
 4. Example:
    ```powershell
-   .\dav2mkv.ps1 -InputPath C:\input_videos -OutputFolder C:\converted_videos -Container mkv
+   .\dav2mkv.ps1 -InputPath C:\input_videos -OutputFolder C:\converted_videos -Container mp4
    ```
 
 ### 4. Bash Script (`dav2mkv.sh`)
@@ -130,11 +130,11 @@ FFmpeg can be installed using various package managers or directly from its webs
    ```
    - `input_path`: Path to a single file or a folder containing multiple files.
    - `output_folder`: Folder where converted files will be saved.
-   - `container`: Specify the output container format (`mkv` or `mp4`).
+   - `container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
 
 5. Example:
    ```bash
-   ./dav2mkv.sh ./input_videos ./converted_videos mkv
+   ./dav2mkv.sh ./input_videos ./converted_videos mp4
    ```
 
 ## Notes
