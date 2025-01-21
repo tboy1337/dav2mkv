@@ -23,7 +23,7 @@ A versatile tool for converting DAV video files (and other formats) to MKV or MP
 FFmpeg can be installed using various package managers or directly from its website:
 
 #### Windows
-- Download the latest static build from [FFmpeg's official website](https://ffmpeg.org/download.html).
+- Download the latest static build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
 - Extract the files and add the `bin` folder to your system's PATH.
 
 #### macOS
