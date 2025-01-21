@@ -43,11 +43,11 @@ A versatile tool for converting DAV video files (and other formats) to MKV or MP
 1. Open a Command Prompt.
 2. Navigate to the folder containing `dav2mkv.cmd`.
 3. Run the script using the following command:
-   ```cmd
+   ```batch
    dav2mkv.cmd [input_folder] [output_folder]
    ```
 4. Example:
-   ```cmd
+   ```batch
    dav2mkv.cmd C:\input_videos C:\converted_videos
    ```
 
