@@ -25,6 +25,15 @@ FFmpeg can be installed using various package managers or directly from its webs
 #### Windows
 - Download the latest static build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
 - Extract the files and add the `bin` folder to your system's PATH.
+- Use a package manager:
+  - **Winget**:
+    ```batch
+    winget install ffmpeg
+    ```
+  - **Chocolatey**:
+    ```batch
+    choco install ffmpeg-full
+    ```
 
 #### macOS
 - Use Homebrew:
