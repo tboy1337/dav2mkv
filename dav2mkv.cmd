@@ -165,3 +165,4 @@ if defined INPUT_FILE (
 )
 
 endlocal
+exit
