@@ -1,8 +1,10 @@
-# DAV Video Converter
+# DAV2MKV: The Ultimate DAV to MKV/MP4 Converter 🚀
 
 A versatile tool for converting DAV video files to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion. Versions of the script are available for Python, Windows Batch, PowerShell, and Bash environments.
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Features ✨
 
 - Direct stream copy (no quality loss)
 - Maintains all original streams (video, audio, subtitles)
@@ -13,12 +15,12 @@ A versatile tool for converting DAV video files to MKV or MP4 while maintaining 
 - Progress tracking
 - Cross-platform compatibility
 
-## Prerequisites
+## Prerequisites 📋
 
 1. **FFmpeg**: Ensure FFmpeg is installed and available in your system's PATH.
 2. **Python Environment**: Required for the Python version of the script.
 
-### Installing FFmpeg
+### Installing FFmpeg 🔧
 
 FFmpeg can be installed using various package managers or directly from its website:
 
@@ -56,9 +58,9 @@ FFmpeg can be installed using various package managers or directly from its webs
     sudo pacman -S ffmpeg
     ```
 
-## Usage Instructions
+## Usage Instructions 📖
 
-### 1. Python Script (`dav2mkv.py`)
+### 1. Python Script (`dav2mkv.py`) 🐍
 
 #### Requirements:
 - Python 3.x
@@ -78,7 +80,7 @@ FFmpeg can be installed using various package managers or directly from its webs
    python dav2mkv.py ./input_videos ./converted_videos --container mp4
    ```
 
-### 2. Windows Batch Script (`dav2mkv.cmd`)
+### 2. Windows Batch Script (`dav2mkv.cmd`) 🪟
 
 #### Requirements:
 - Windows operating system
@@ -99,7 +101,7 @@ FFmpeg can be installed using various package managers or directly from its webs
    dav2mkv.cmd C:\input_videos C:\converted_videos mp4
    ```
 
-### 3. PowerShell Script (`dav2mkv.ps1`)
+### 3. PowerShell Script (`dav2mkv.ps1`) 💻
 
 #### Requirements:
 - PowerShell 5.0 or later
@@ -120,7 +122,7 @@ FFmpeg can be installed using various package managers or directly from its webs
    .\dav2mkv.ps1 -InputPath C:\input_videos -OutputFolder C:\converted_videos -Container mp4
    ```
 
-### 4. Bash Script (`dav2mkv.sh`)
+### 4. Bash Script (`dav2mkv.sh`) 🐧
 
 #### Requirements:
 - Linux or macOS operating system
@@ -146,15 +148,19 @@ FFmpeg can be installed using various package managers or directly from its webs
    ./dav2mkv.sh ./input_videos ./converted_videos mp4
    ```
 
-## Notes
+## Notes 📝
 
 - Replace `[input_path]`, `[output_folder]`, and `[container]` with the actual paths and desired format.
 - Ensure that FFmpeg is correctly installed and accessible from the command line for all script versions.
 
-## License
+## License 📄
 
 This project is licensed under the MIT License. See the `LICENSE.txt` file for details.
 
-## Contributions
+## Contributions 🤝
 
 Contributions, issues, and feature requests are welcome! Feel free to fork this repository and submit pull requests.
+
+## Support ⭐
+
+If you like this project, give it a ⭐ on GitHub and share it with your friends!
