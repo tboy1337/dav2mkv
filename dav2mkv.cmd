@@ -12,9 +12,6 @@ REM - Maintains all original streams (video, audio, subtitles)
 REM - Batch processing support
 REM - Comprehensive logging and error handling
 REM - Cross-platform compatibility
-REM 
-REM Author: Based on dav2mkv.py Python script
-REM Version: 2.0.0
 REM ============================================================================
 
 REM Initialize variables
@@ -555,5 +552,3 @@ if defined INPUT_FILE (
 
 call :log_message "INFO" "=== %SCRIPT_NAME% Finished ==="
 exit /b %final_exit_code%
-
-REM End of script

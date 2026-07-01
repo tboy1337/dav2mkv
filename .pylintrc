@@ -1,0 +1,12 @@
+[MAIN]
+py-version = 3.12
+
+[FORMAT]
+max-line-length = 88
+max-module-lines = 1250
+
+[MESSAGES CONTROL]
+enable =
+    logging-format-interpolation,
+    broad-exception-caught,
+    subprocess-run-check
