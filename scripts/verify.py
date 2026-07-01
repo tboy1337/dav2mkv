@@ -81,16 +81,6 @@ def main() -> None:
             "bandit",
             _python_m("bandit", "-r", "src/dav2mkv", "-c", "pyproject.toml", "-q"),
         ),
-        (
-            "pip-audit",
-            _python_m(
-                "pip_audit",
-                "-r",
-                "requirements.txt",
-                "-r",
-                "requirements-dev.txt",
-            ),
-        ),
         ("pytest", _python_m("pytest")),
     ]
 

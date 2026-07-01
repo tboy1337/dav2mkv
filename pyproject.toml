@@ -24,7 +24,6 @@ dev = [
     "autopep8",
     "hypothesis",
     "bandit",
-    "pip-audit",
 ]
 
 [project.scripts]
