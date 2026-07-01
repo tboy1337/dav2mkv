@@ -24,8 +24,7 @@ def test_setup_logging_console_only() -> None:
     assert logger.name == "dav2mkv"
     assert logger.level == logging.DEBUG
     assert any(
-        isinstance(handler, logging.StreamHandler)
-        for handler in logger.handlers
+        isinstance(handler, logging.StreamHandler) for handler in logger.handlers
     )
 
 
@@ -58,7 +57,5 @@ def test_setup_logging_file_handler_failure(
     logger.warning("still works")
 
     assert any(
-        isinstance(handler, logging.StreamHandler)
-        for handler in logger.handlers
+        isinstance(handler, logging.StreamHandler) for handler in logger.handlers
     )
-

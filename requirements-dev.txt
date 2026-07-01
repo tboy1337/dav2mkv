@@ -12,3 +12,4 @@ isort
 autopep8
 hypothesis
 bandit
+pip-audit

@@ -11,3 +11,12 @@ build/
 htmlcov/
 pylint_report.txt
 *.egg
+
+# PyInstaller
+file_version_info.txt
+*.manifest
+*.spec
+!dav2mkv.spec
+
+# Virtual environments
+venv/
