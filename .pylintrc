@@ -1,5 +1,6 @@
 [MAIN]
 py-version = 3.12
+source-roots = src
 
 [FORMAT]
 max-line-length = 88

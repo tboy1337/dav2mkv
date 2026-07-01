@@ -1,3 +1,43 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dav2mkv"
+version = "2.0.0"
+description = "Convert DAV/video files to MKV/MP4 via FFmpeg stream copy"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Commercial Restricted License (CRL)" }
+authors = [{ name = "tboy1337" }]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-timeout",
+    "pytest-mock",
+    "pytest-cov",
+    "mypy",
+    "pylint",
+    "black",
+    "isort",
+    "autopep8",
+    "hypothesis",
+    "bandit",
+]
+
+[project.scripts]
+dav2mkv = "dav2mkv.cli:main"
+
+[tool.setuptools]
+license-files = ["LICENSE.md"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.black]
 line-length = 88
 target-version = ["py312", "py313", "py314"]
@@ -6,3 +46,9 @@ target-version = ["py312", "py313", "py314"]
 profile = "black"
 line_length = 88
 py_version = 312
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+targets = ["src/dav2mkv"]
+# FFmpeg integration requires subprocess calls with fixed executables.
+skips = ["B404", "B603", "B607"]

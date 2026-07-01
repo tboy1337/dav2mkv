@@ -60,16 +60,28 @@ FFmpeg can be installed using various package managers or directly from its webs
 
 All script versions use the same flag-based interface. Replace paths and options as needed.
 
-### 1. Python Script (`dav2mkv.py`)
+### 1. Python Package (`dav2mkv`)
 
 #### Requirements:
-- Python 3.x (stdlib only; no extra packages)
+- Python 3.12+
+- FFmpeg and FFprobe in your system PATH
+- Stdlib only at runtime (no extra packages required to run)
+
+#### Installation:
+```bash
+pip install dav2mkv
+```
+
+For development:
+```bash
+pip install -e ".[dev]"
+```
 
 #### Examples:
 ```bash
-python dav2mkv.py -f input.dav -o output.mkv
-python dav2mkv.py -d ./videos -o ./converted --container mp4 --recursive
-python dav2mkv.py input.dav ./converted --container mp4
+dav2mkv -f input.dav -o output.mkv
+dav2mkv -d ./videos -o ./converted --container mp4 --recursive
+python -m dav2mkv input.dav ./converted --container mp4
 ```
 
 #### Options:
@@ -81,30 +93,30 @@ python dav2mkv.py input.dav ./converted --container mp4
 - `-c`, `--concurrent`: Parallel workers (directory mode)
 - `--log-level`, `--log-file`: Logging options
 
-### 2. Windows Batch Script (`dav2mkv.cmd`)
+### 2. Windows Batch Script (`scripts/dav2mkv.cmd`)
 
 #### Requirements:
 - Windows operating system
 
 #### Examples:
 ```batch
-dav2mkv.cmd -f input.dav -o output.mkv
-dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursive
+scripts\dav2mkv.cmd -f input.dav -o output.mkv
+scripts\dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursive
 ```
 
 #### Notes:
 - Batch directory mode runs sequentially (`-c` is ignored).
 - When `-o` is set for directory mode, output files preserve the input folder structure under the output directory.
 
-### 3. PowerShell Script (`dav2mkv.ps1`)
+### 3. PowerShell Script (`scripts/dav2mkv.ps1`)
 
 #### Requirements:
 - Windows PowerShell 5.1+ or PowerShell 7+
 
 #### Examples:
 ```powershell
-.\dav2mkv.ps1 -File input.dav -Output output.mkv
-.\dav2mkv.ps1 -Directory C:\input_videos -OutputFolder C:\converted_videos -Container mp4 -Recursive
+.\scripts\dav2mkv.ps1 -File input.dav -Output output.mkv
+.\scripts\dav2mkv.ps1 -Directory C:\input_videos -OutputFolder C:\converted_videos -Container mp4 -Recursive
 ```
 
 #### Parameter aliases:
@@ -114,7 +126,7 @@ dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursiv
 #### Notes:
 - Directory batch mode runs sequentially in the current process.
 
-### 4. Bash Script (`dav2mkv.sh`)
+### 4. Bash Script (`scripts/dav2mkv.sh`)
 
 #### Requirements:
 - Linux or macOS with Bash
@@ -122,9 +134,9 @@ dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursiv
 
 #### Examples:
 ```bash
-chmod +x dav2mkv.sh
-./dav2mkv.sh -f input.dav -o output.mkv
-./dav2mkv.sh -d ./input_videos -o ./converted_videos --container mp4 --recursive
+chmod +x scripts/dav2mkv.sh
+./scripts/dav2mkv.sh -f input.dav -o output.mkv
+./scripts/dav2mkv.sh -d ./input_videos -o ./converted_videos --container mp4 --recursive
 ```
 
 ## Notes

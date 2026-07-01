@@ -1,0 +1,14 @@
+# Development dependencies for dav2mkv (mirrors pyproject.toml [project.optional-dependencies] dev).
+# Install with: pip install -r requirements-dev.txt -e .
+
+pytest
+pytest-timeout
+pytest-mock
+pytest-cov
+mypy
+pylint
+black
+isort
+autopep8
+hypothesis
+bandit

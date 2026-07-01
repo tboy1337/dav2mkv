@@ -1,0 +1,13 @@
+.mypy_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+dist/
+build/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+pylint_report.txt
+*.egg
