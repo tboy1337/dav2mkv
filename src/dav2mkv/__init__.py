@@ -5,6 +5,7 @@ A robust, production-ready tool for converting DAV video files to MKV or MP4
 while maintaining perfect quality through stream copying.
 """
 
+from dav2mkv._version import get_version
 from dav2mkv.batch import BatchConverter
 from dav2mkv.converter import VideoConverter
 from dav2mkv.exceptions import (
@@ -13,7 +14,7 @@ from dav2mkv.exceptions import (
     VideoProcessingError,
 )
 
-__version__ = "2.0.0"
+__version__ = get_version()
 
 __all__ = [
     "BatchConverter",

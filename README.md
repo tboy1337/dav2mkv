@@ -1,22 +1,22 @@
 # DAV2MKV: The Ultimate DAV to MKV/MP4 Converter
 
-A versatile tool for converting DAV video files to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion. Versions of the script are available for Python, Windows Batch, PowerShell, and Bash environments.
+A Python command-line tool for converting DAV video files to MKV or MP4 while maintaining perfect quality through stream copying. dav2mkv uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion.
 
 ## Features
 
 - Direct stream copy (no quality loss)
 - Maintains all original streams (video, audio, subtitles)
-- Batch processing with parallel conversion support (Python and Bash)
+- Batch processing with parallel directory conversion
 - Convert a single file or an entire folder of files
 - Specify the output container format (MKV or MP4, default is MKV)
 - Display detailed video information before conversion
 - Progress tracking
-- Cross-platform compatibility
+- Cross-platform compatibility (Windows, macOS, Linux)
 
 ## Prerequisites
 
-1. **FFmpeg**: Ensure FFmpeg is installed and available in your system's PATH.
-2. **Python Environment**: Required only for the Python version of the script.
+1. **Python 3.12+**
+2. **FFmpeg and FFprobe** installed and available in your system PATH
 
 ### Installing FFmpeg
 
@@ -56,35 +56,30 @@ FFmpeg can be installed using various package managers or directly from its webs
     sudo pacman -S ffmpeg
     ```
 
-## Usage Instructions
+## Installation
 
-All script versions use the same flag-based interface. Replace paths and options as needed.
-
-### 1. Python Package (`dav2mkv`)
-
-#### Requirements:
-- Python 3.12+
-- FFmpeg and FFprobe in your system PATH
-- Stdlib only at runtime (no extra packages required to run)
-
-#### Installation:
 ```bash
 pip install dav2mkv
 ```
 
 For development:
+
 ```bash
 pip install -e ".[dev]"
 ```
 
-#### Examples:
+A standalone Windows executable is also published on [GitHub Releases](https://github.com/tboy1337/dav2mkv/releases).
+
+## Usage
+
 ```bash
 dav2mkv -f input.dav -o output.mkv
 dav2mkv -d ./videos -o ./converted --container mp4 --recursive
 python -m dav2mkv input.dav ./converted --container mp4
 ```
 
-#### Options:
+### Options
+
 - `-f`, `--file`: Single video file to convert
 - `-d`, `--directory`: Directory containing video files to convert
 - `-o`, `--output`: Output file or directory
@@ -93,56 +88,24 @@ python -m dav2mkv input.dav ./converted --container mp4
 - `-c`, `--concurrent`: Parallel workers (directory mode)
 - `--log-level`, `--log-file`: Logging options
 
-### 2. Windows Batch Script (`scripts/dav2mkv.cmd`)
+## Development
 
-#### Requirements:
-- Windows operating system
+Run local quality checks:
 
-#### Examples:
-```batch
-scripts\dav2mkv.cmd -f input.dav -o output.mkv
-scripts\dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursive
-```
-
-#### Notes:
-- Batch directory mode runs sequentially (`-c` is ignored).
-- When `-o` is set for directory mode, output files preserve the input folder structure under the output directory.
-
-### 3. PowerShell Script (`scripts/dav2mkv.ps1`)
-
-#### Requirements:
-- Windows PowerShell 5.1+ or PowerShell 7+
-
-#### Examples:
-```powershell
-.\scripts\dav2mkv.ps1 -File input.dav -Output output.mkv
-.\scripts\dav2mkv.ps1 -Directory C:\input_videos -OutputFolder C:\converted_videos -Container mp4 -Recursive
-```
-
-#### Parameter aliases:
-- `-InputPath` is an alias for `-File`
-- `-OutputFolder` is an alias for `-Output`
-
-#### Notes:
-- Directory batch mode runs sequentially in the current process.
-
-### 4. Bash Script (`scripts/dav2mkv.sh`)
-
-#### Requirements:
-- Linux or macOS with Bash
-- `jq` and `bc` are optional (used for richer video info logging when available)
-
-#### Examples:
 ```bash
-chmod +x scripts/dav2mkv.sh
-./scripts/dav2mkv.sh -f input.dav -o output.mkv
-./scripts/dav2mkv.sh -d ./input_videos -o ./converted_videos --container mp4 --recursive
+py scripts/verify.py
+```
+
+Apply formatting fixes before checks:
+
+```bash
+py scripts/verify.py --fix
 ```
 
 ## Notes
 
-- Ensure FFmpeg and FFprobe are correctly installed and accessible from the command line for all script versions.
-- For directory conversion with a separate output folder, use `-o` / `-Output` / `-OutputFolder` to specify the destination directory.
+- Ensure FFmpeg and FFprobe are correctly installed and accessible from the command line.
+- For directory conversion with a separate output folder, use `-o` to specify the destination directory.
 
 ## License
 

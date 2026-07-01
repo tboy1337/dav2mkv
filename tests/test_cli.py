@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from dav2mkv import __version__
 from dav2mkv.cli import create_argument_parser, main, resolve_input_arguments
 
 
@@ -18,7 +19,7 @@ def test_create_argument_parser_version_flag(
     with pytest.raises(SystemExit):
         parser.parse_args(["--version"])
     captured = capsys.readouterr()
-    assert "DAV Video Converter 2.0.0" in captured.out
+    assert f"DAV Video Converter {__version__}" in captured.out
 
 
 def test_resolve_input_arguments_file_flag() -> None:

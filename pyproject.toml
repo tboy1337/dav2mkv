@@ -1,15 +1,32 @@
 [build-system]
-requires = ["setuptools>=69.0"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "dav2mkv"
-version = "2.0.0"
+version = "1.0.1"
 description = "Convert DAV/video files to MKV/MP4 via FFmpeg stream copy"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Commercial Restricted License (CRL)" }
-authors = [{ name = "tboy1337" }]
+license = "LicenseRef-CRL-1.1"
+license-files = ["LICENSE.md"]
+authors = [
+    { name = "tboy1337" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Typing :: Typed",
+]
+
+[project.scripts]
+dav2mkv = "dav2mkv.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -26,26 +43,79 @@ dev = [
     "bandit",
 ]
 
-[project.scripts]
-dav2mkv = "dav2mkv.cli:main"
+[project.urls]
+Homepage = "https://github.com/tboy1337/dav2mkv"
+Repository = "https://github.com/tboy1337/dav2mkv"
 
 [tool.setuptools]
-license-files = ["LICENSE.md"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["dav2mkv*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+dav2mkv = ["py.typed"]
 
 [tool.black]
 line-length = 88
 target-version = ["py312", "py313", "py314"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | venv
+  | htmlcov
+  | __pycache__
+)/
+'''
 
 [tool.isort]
 profile = "black"
 line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
 py_version = 312
+skip_glob = [
+    "*/venv/*",
+    "*/.venv/*",
+    "*/virtualenv/*",
+    "*/build/*",
+    "*/dist/*",
+    "*/__pycache__/*",
+    "*/htmlcov/*",
+]
+known_first_party = ["dav2mkv"]
+known_third_party = [
+    "pytest",
+    "hypothesis",
+]
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "THIRDPARTY",
+    "FIRSTPARTY",
+    "LOCALFOLDER",
+]
+
+[tool.hypothesis]
+max_examples = 100
+deadline = 30000
+derandomize = false
+print_blob = true
 
 [tool.bandit]
 exclude_dirs = ["tests"]
