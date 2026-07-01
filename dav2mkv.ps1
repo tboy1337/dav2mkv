@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+# Also supported on Windows PowerShell 5.1+ when run as: powershell -File dav2mkv.ps1
 <#
 .SYNOPSIS
     DAV Video Converter - PowerShell Edition
@@ -62,9 +63,11 @@
 [CmdletBinding(DefaultParameterSetName = 'File')]
 param(
     [Parameter(ParameterSetName = 'File', Mandatory = $true)]
+    [Alias('InputPath')]
     [string]$File,
     
     [Parameter(ParameterSetName = 'Directory', Mandatory = $true)]
+    [Alias('InputDir')]
     [string]$Directory,
     
     [Parameter(ParameterSetName = 'Version', Mandatory = $true)]
@@ -72,6 +75,7 @@ param(
     
     [Parameter(ParameterSetName = 'File')]
     [Parameter(ParameterSetName = 'Directory')]
+    [Alias('OutputFolder')]
     [string]$Output,
     
     [Parameter(ParameterSetName = 'File')]
@@ -130,9 +134,9 @@ class VideoInfo {
     [hashtable] $FormatInfo
     [hashtable] $StreamCounts
 
-    VideoInfo([hashtable] $data) {
+    VideoInfo([object] $data) {
         $this.RawData = $data
-        $this.Streams = $data.streams
+        $this.Streams = @($data.streams)
         $this.FormatInfo = $data.format
 
         # Initialize stream counts
@@ -166,7 +170,7 @@ class VideoInfo {
     [hashtable] GetPrimaryVideoInfo() {
         $videoStreams = $this.GetVideoStreams()
         if ($videoStreams.Count -gt 0) {
-            return $videoStreams[0]
+            return @{ codec_name = $videoStreams[0].codec_name; width = $videoStreams[0].width; height = $videoStreams[0].height; r_frame_rate = $videoStreams[0].r_frame_rate; bit_rate = $videoStreams[0].bit_rate }
         }
         return @{}
     }
@@ -174,7 +178,7 @@ class VideoInfo {
     [hashtable] GetPrimaryAudioInfo() {
         $audioStreams = $this.GetAudioStreams()
         if ($audioStreams.Count -gt 0) {
-            return $audioStreams[0]
+            return @{ codec_name = $audioStreams[0].codec_name; channels = $audioStreams[0].channels; sample_rate = $audioStreams[0].sample_rate; bit_rate = $audioStreams[0].bit_rate }
         }
         return @{}
     }
@@ -218,18 +222,17 @@ class VideoConverter {
 
         try {
             Write-LogMessage "DEBUG" "Running command: $($cmd -join ' ')"
-            
-            $result = Start-Process -FilePath 'ffprobe' -ArgumentList $cmd[1..($cmd.Length-1)] `
-                -RedirectStandardOutput ([System.IO.Path]::GetTempFileName()) `
-                -RedirectStandardError ([System.IO.Path]::GetTempFileName()) `
+
+            $stdoutFile = [System.IO.Path]::GetTempFileName()
+            $stderrFile = [System.IO.Path]::GetTempFileName()
+            $process = Start-Process -FilePath 'ffprobe' -ArgumentList $cmd[1..($cmd.Length - 1)] `
+                -RedirectStandardOutput $stdoutFile `
+                -RedirectStandardError $stderrFile `
                 -Wait -PassThru -NoNewWindow
 
-            $stdoutFile = $result.StartInfo.RedirectStandardOutput
-            $stderrFile = $result.StartInfo.RedirectStandardError
-
-            if ($result.ExitCode -ne 0) {
-                $errorOutput = Get-Content $stderrFile -Raw
-                Write-LogMessage "ERROR" "ffprobe failed with return code $($result.ExitCode): $errorOutput"
+            if ($process.ExitCode -ne 0) {
+                $errorOutput = Get-Content $stderrFile -Raw -ErrorAction SilentlyContinue
+                Write-LogMessage "ERROR" "ffprobe failed with return code $($process.ExitCode): $errorOutput"
                 Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
                 return $null
             }
@@ -237,7 +240,7 @@ class VideoConverter {
             $jsonOutput = Get-Content $stdoutFile -Raw
             Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
 
-            $data = $jsonOutput | ConvertFrom-Json -AsHashtable
+            $data = $jsonOutput | ConvertFrom-Json
             $videoInfo = [VideoInfo]::new($data)
 
             Write-LogMessage "DEBUG" "Successfully parsed video info for $inputFile"
@@ -249,12 +252,18 @@ class VideoConverter {
         }
     }
 
-    [void] UpdateStats([bool] $attempted, [bool] $successful, [double] $processingTime) {
+    [void] RecordAttempt() {
         $null = $this.StatsLock.WaitOne()
         try {
-            if ($attempted) {
-                $this.Stats.conversions_attempted++
-            }
+            $this.Stats.conversions_attempted++
+        } finally {
+            $this.StatsLock.ReleaseMutex()
+        }
+    }
+
+    [void] RecordResult([bool] $successful, [double] $processingTime) {
+        $null = $this.StatsLock.WaitOne()
+        try {
             if ($successful) {
                 $this.Stats.conversions_successful++
             } else {
@@ -277,7 +286,7 @@ class VideoConverter {
             $this.ConversionLock.ReleaseMutex()
         }
 
-        $this.UpdateStats($true, $false, 0.0)
+        $this.RecordAttempt()
 
         try {
             # Validate input
@@ -338,41 +347,39 @@ class VideoConverter {
 
             Write-LogMessage "DEBUG" "Running FFmpeg command: ffmpeg $($ffmpegArgs -join ' ')"
 
-            # Run conversion
+            $stdoutFile = [System.IO.Path]::GetTempFileName()
+            $stderrFile = [System.IO.Path]::GetTempFileName()
             $process = Start-Process -FilePath 'ffmpeg' -ArgumentList $ffmpegArgs `
-                -RedirectStandardOutput ([System.IO.Path]::GetTempFileName()) `
-                -RedirectStandardError ([System.IO.Path]::GetTempFileName()) `
+                -RedirectStandardOutput $stdoutFile `
+                -RedirectStandardError $stderrFile `
                 -Wait -PassThru -NoNewWindow
 
             $processingTime = ((Get-Date) - $startTime).TotalSeconds
-            
-            $stderrFile = $process.StartInfo.RedirectStandardError
 
             if ($process.ExitCode -eq 0) {
-                # Verify output file
                 if ($this.VerifyOutputFile($outputFile, $inputFile)) {
                     Write-LogMessage "INFO" "Conversion successful: $outputFile ($([math]::Round($processingTime, 2))s)"
-                    $this.UpdateStats($false, $true, $processingTime)
-                    Remove-Item $process.StartInfo.RedirectStandardOutput, $stderrFile -ErrorAction SilentlyContinue
+                    $this.RecordResult($true, $processingTime)
+                    Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
                     return $true
                 } else {
                     Write-LogMessage "ERROR" "Output file verification failed"
-                    $this.UpdateStats($false, $false, $processingTime)
-                    Remove-Item $process.StartInfo.RedirectStandardOutput, $stderrFile -ErrorAction SilentlyContinue
+                    $this.RecordResult($false, $processingTime)
+                    Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
                     return $false
                 }
             } else {
-                $errorMsg = Get-Content $stderrFile -Raw
+                $errorMsg = Get-Content $stderrFile -Raw -ErrorAction SilentlyContinue
                 Write-LogMessage "ERROR" "FFmpeg conversion failed (code $($process.ExitCode)): $errorMsg"
-                $this.UpdateStats($false, $false, $processingTime)
-                Remove-Item $process.StartInfo.RedirectStandardOutput, $stderrFile -ErrorAction SilentlyContinue
+                $this.RecordResult($false, $processingTime)
+                Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
                 return $false
             }
 
         } catch {
             $processingTime = ((Get-Date) - $startTime).TotalSeconds
             Write-LogMessage "ERROR" "Conversion failed with exception: $($_.Exception.Message)"
-            $this.UpdateStats($false, $false, $processingTime)
+            $this.RecordResult($false, $processingTime)
             return $false
         }
     }
@@ -518,7 +525,8 @@ class BatchConverter {
         }
     }
 
-    [hashtable] ConvertDirectory([string] $inputDir, [string] $outputDir, [string] $container, [bool] $recursive, [bool] $overwrite, [string] $logLevel, [string] $logFile) {
+    [hashtable] ConvertDirectory([string] $inputDir, [string] $outputDir, [string] $container, [bool] $recursive, [bool] $overwrite) {
+        $inputDir = $inputDir.TrimEnd('\', '/')
         if (-not $outputDir) {
             $outputDir = $inputDir
         } elseif (-not (Test-Path $outputDir)) {
@@ -528,7 +536,6 @@ class BatchConverter {
         Write-LogMessage "INFO" "Starting batch conversion: $inputDir -> $outputDir"
         Write-LogMessage "INFO" "Container: $container, Workers: $($this.MaxWorkers)"
 
-        # Find all video files
         $videoFiles = $this.FindVideoFiles($inputDir, $recursive)
 
         if ($videoFiles.Count -eq 0) {
@@ -536,67 +543,37 @@ class BatchConverter {
             return @{ total = 0; successful = 0; failed = 0 }
         }
 
-        # Process files with parallel jobs
         $results = @{ total = $videoFiles.Count; successful = 0; failed = 0 }
 
-        Write-LogMessage "INFO" "Processing $($videoFiles.Count) files with $($this.MaxWorkers) workers"
+        Write-LogMessage "INFO" "Processing $($videoFiles.Count) files sequentially"
 
-        # Create script block for parallel processing
-        $scriptBlock = {
-            param($videoFile, $inputDir, $outputDir, $container, $overwrite, $LogLevel, $LogFile)
-            
-            # Re-initialize logging in job context
-            Initialize-Logging -LogLevel $LogLevel -LogFile $LogFile
-            
-            # Create converter instance
-            $converter = [VideoConverter]::new($Global:Logger)
-            
-            # Calculate output path
+        $completed = 0
+        foreach ($videoFile in $videoFiles) {
             if ($outputDir -ne $inputDir) {
                 $relativePath = $videoFile.Substring($inputDir.Length).TrimStart('\', '/')
                 $outputFile = Join-Path $outputDir ([System.IO.Path]::ChangeExtension($relativePath, $container))
             } else {
                 $outputFile = [System.IO.Path]::ChangeExtension($videoFile, $container)
             }
-            
-            # Perform conversion
-            $success = $converter.ConvertVideo($videoFile, $outputFile, $container, $overwrite)
-            
-            return @{
-                File = $videoFile
-                Success = $success
+
+            $outputParent = Split-Path $outputFile -Parent
+            if ($outputParent -and (-not (Test-Path $outputParent))) {
+                New-Item -Path $outputParent -ItemType Directory -Force | Out-Null
             }
+
+            $success = $this.Converter.ConvertVideo($videoFile, $outputFile, $container, $overwrite)
+            $completed++
+
+            if ($success) {
+                $results.successful++
+            } else {
+                $results.failed++
+            }
+
+            Write-LogMessage "INFO" "Progress: $completed/$($videoFiles.Count) files processed ($($results.successful) successful, $($results.failed) failed)"
         }
 
-        # Process files in batches to avoid overwhelming the system
-        $batchSize = $this.MaxWorkers
-        $completed = 0
-
-        for ($i = 0; $i -lt $videoFiles.Count; $i += $batchSize) {
-            $batch = $videoFiles[$i..[Math]::Min($i + $batchSize - 1, $videoFiles.Count - 1)]
-            
-            $jobs = foreach ($videoFile in $batch) {
-                Start-Job -ScriptBlock $scriptBlock -ArgumentList $videoFile, $inputDir, $outputDir, $container, $overwrite, $logLevel, $logFile
-            }
-
-            # Wait for batch to complete
-            $jobs | Wait-Job | ForEach-Object {
-                $result = $_ | Receive-Job
-                $completed++
-
-                if ($result.Success) {
-                    $results.successful++
-                } else {
-                    $results.failed++
-                }
-
-                Write-LogMessage "INFO" "Progress: $completed/$($videoFiles.Count) files processed ($($results.successful) successful, $($results.failed) failed)"
-                
-                Remove-Job $_
-            }
-        }
-
-        Write-LogMessage "INFO" "Batch conversion completed: $results"
+        Write-LogMessage "INFO" "Batch conversion completed: $($results | ConvertTo-Json -Compress)"
         return $results
     }
 }
@@ -782,7 +759,7 @@ function Invoke-Main {
 
             $batchConverter = [BatchConverter]::new($converter, $maxWorkers)
 
-            $results = $batchConverter.ConvertDirectory($Directory, $Output, $Container, $Recursive, $Overwrite, $LogLevel, $LogFile)
+            $results = $batchConverter.ConvertDirectory($Directory, $Output, $Container, $Recursive, $Overwrite)
 
             # Log final stats
             $converterStats = $converter.GetStats()
@@ -809,9 +786,10 @@ function Invoke-Main {
         Write-LogMessage "DEBUG" $_.ScriptStackTrace
         return 1
     } finally {
-        Write-LogMessage "INFO" "=== DAV Video Converter Finished ==="
-        
-        # Clean up mutexes
+        if ($Global:Logger) {
+            Write-LogMessage "INFO" "=== DAV Video Converter Finished ==="
+        }
+
         if ($Global:LogLock) {
             $Global:LogLock.Dispose()
         }

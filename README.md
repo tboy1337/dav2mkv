@@ -1,26 +1,24 @@
-# DAV2MKV: The Ultimate DAV to MKV/MP4 Converter 🚀
+# DAV2MKV: The Ultimate DAV to MKV/MP4 Converter
 
 A versatile tool for converting DAV video files to MKV or MP4 while maintaining perfect quality through stream copying. This tool uses FFmpeg to perform direct stream copy operations, ensuring no quality loss during conversion. Versions of the script are available for Python, Windows Batch, PowerShell, and Bash environments.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## Features ✨
+## Features
 
 - Direct stream copy (no quality loss)
 - Maintains all original streams (video, audio, subtitles)
-- Batch processing with parallel conversion support
+- Batch processing with parallel conversion support (Python and Bash)
 - Convert a single file or an entire folder of files
 - Specify the output container format (MKV or MP4, default is MKV)
 - Display detailed video information before conversion
 - Progress tracking
 - Cross-platform compatibility
 
-## Prerequisites 📋
+## Prerequisites
 
 1. **FFmpeg**: Ensure FFmpeg is installed and available in your system's PATH.
-2. **Python Environment**: Required for the Python version of the script.
+2. **Python Environment**: Required only for the Python version of the script.
 
-### Installing FFmpeg 🔧
+### Installing FFmpeg
 
 FFmpeg can be installed using various package managers or directly from its website:
 
@@ -58,109 +56,90 @@ FFmpeg can be installed using various package managers or directly from its webs
     sudo pacman -S ffmpeg
     ```
 
-## Usage Instructions 📖
+## Usage Instructions
 
-### 1. Python Script (`dav2mkv.py`) 🐍
+All script versions use the same flag-based interface. Replace paths and options as needed.
+
+### 1. Python Script (`dav2mkv.py`)
 
 #### Requirements:
-- Python 3.x
+- Python 3.x (stdlib only; no extra packages)
 
-#### Steps:
-1. Install Python if not already installed.
-2. Run the script using the following command:
-   ```bash
-   python dav2mkv.py [input_path] [output_folder] [--container container]
-   ```
-   - `input_path`: Path to a single file or a folder containing multiple files.
-   - `output_folder`: Folder where converted files will be saved.
-   - `--container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
+#### Examples:
+```bash
+python dav2mkv.py -f input.dav -o output.mkv
+python dav2mkv.py -d ./videos -o ./converted --container mp4 --recursive
+python dav2mkv.py input.dav ./converted --container mp4
+```
 
-3. Example:
-   ```bash
-   python dav2mkv.py ./input_videos ./converted_videos --container mp4
-   ```
+#### Options:
+- `-f`, `--file`: Single video file to convert
+- `-d`, `--directory`: Directory containing video files to convert
+- `-o`, `--output`: Output file or directory
+- `--container`: `mkv` or `mp4` (default: `mkv`)
+- `--recursive`: Process subdirectories (directory mode)
+- `-c`, `--concurrent`: Parallel workers (directory mode)
+- `--log-level`, `--log-file`: Logging options
 
-### 2. Windows Batch Script (`dav2mkv.cmd`) 🪟
+### 2. Windows Batch Script (`dav2mkv.cmd`)
 
 #### Requirements:
 - Windows operating system
 
-#### Steps:
-1. Open a Command Prompt.
-2. Navigate to the folder containing `dav2mkv.cmd`.
-3. Run the script using the following command:
-   ```batch
-   dav2mkv.cmd [input_path] [output_folder] [container]
-   ```
-   - `input_path`: Path to a single file or a folder containing multiple files.
-   - `output_folder`: Folder where converted files will be saved.
-   - `container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
+#### Examples:
+```batch
+dav2mkv.cmd -f input.dav -o output.mkv
+dav2mkv.cmd -d C:\input_videos -o C:\converted_videos --container mp4 --recursive
+```
 
-4. Example:
-   ```batch
-   dav2mkv.cmd C:\input_videos C:\converted_videos mp4
-   ```
+#### Notes:
+- Batch directory mode runs sequentially (`-c` is ignored).
+- When `-o` is set for directory mode, output files preserve the input folder structure under the output directory.
 
-### 3. PowerShell Script (`dav2mkv.ps1`) 💻
+### 3. PowerShell Script (`dav2mkv.ps1`)
 
 #### Requirements:
-- PowerShell 5.0 or later
+- Windows PowerShell 5.1+ or PowerShell 7+
 
-#### Steps:
-1. Open PowerShell.
-2. Navigate to the folder containing `dav2mkv.ps1`.
-3. Run the script using the following command:
-   ```powershell
-   .\dav2mkv.ps1 -InputPath [input_path] -OutputFolder [output_folder] -Container [container]
-   ```
-   - `InputPath`: Path to a single file or a folder containing multiple files.
-   - `OutputFolder`: Folder where converted files will be saved.
-   - `Container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
+#### Examples:
+```powershell
+.\dav2mkv.ps1 -File input.dav -Output output.mkv
+.\dav2mkv.ps1 -Directory C:\input_videos -OutputFolder C:\converted_videos -Container mp4 -Recursive
+```
 
-4. Example:
-   ```powershell
-   .\dav2mkv.ps1 -InputPath C:\input_videos -OutputFolder C:\converted_videos -Container mp4
-   ```
+#### Parameter aliases:
+- `-InputPath` is an alias for `-File`
+- `-OutputFolder` is an alias for `-Output`
 
-### 4. Bash Script (`dav2mkv.sh`) 🐧
+#### Notes:
+- Directory batch mode runs sequentially in the current process.
+
+### 4. Bash Script (`dav2mkv.sh`)
 
 #### Requirements:
-- Linux or macOS operating system
-- Bash shell
+- Linux or macOS with Bash
+- `jq` and `bc` are optional (used for richer video info logging when available)
 
-#### Steps:
-1. Open a terminal.
-2. Navigate to the folder containing `dav2mkv.sh`.
-3. Make the script executable:
-   ```bash
-   chmod +x dav2mkv.sh
-   ```
-4. Run the script using the following command:
-   ```bash
-   ./dav2mkv.sh [input_path] [output_folder] [container]
-   ```
-   - `input_path`: Path to a single file or a folder containing multiple files.
-   - `output_folder`: Folder where converted files will be saved.
-   - `container`: (Optional) Specify the output container format (`mkv` or `mp4`). Default is `mkv`.
+#### Examples:
+```bash
+chmod +x dav2mkv.sh
+./dav2mkv.sh -f input.dav -o output.mkv
+./dav2mkv.sh -d ./input_videos -o ./converted_videos --container mp4 --recursive
+```
 
-5. Example:
-   ```bash
-   ./dav2mkv.sh ./input_videos ./converted_videos mp4
-   ```
+## Notes
 
-## Notes 📝
+- Ensure FFmpeg and FFprobe are correctly installed and accessible from the command line for all script versions.
+- For directory conversion with a separate output folder, use `-o` / `-Output` / `-OutputFolder` to specify the destination directory.
 
-- Replace `[input_path]`, `[output_folder]`, and `[container]` with the actual paths and desired format.
-- Ensure that FFmpeg is correctly installed and accessible from the command line for all script versions.
+## License
 
-## License 📄
+This project is licensed under the Commercial Restricted License (CRL). See the [LICENSE.md](LICENSE.md) file for details.
 
-This project is licensed under the CRL License. See the `LICENSE.md` file for details.
+## Contributions
 
-## Contributions 🤝
+Contributions, issues, and feature requests are welcome. Feel free to fork this repository and submit pull requests.
 
-Contributions, issues, and feature requests are welcome! Feel free to fork this repository and submit pull requests.
+## Support
 
-## Support ⭐
-
-If you like this project, give it a ⭐ on GitHub and share it with your friends!
+If you find this project useful, star it on GitHub and share it with others.

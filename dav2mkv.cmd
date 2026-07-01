@@ -77,7 +77,7 @@ echo   --no-overwrite       Do not overwrite existing output files
 echo.
 echo Processing Options:
 echo   --recursive          Process directories recursively
-echo   -c NUMBER            Maximum number of files to process (sequential in batch)
+echo   -c NUMBER            Ignored (batch mode is sequential only)
 echo.
 echo Logging Options:
 echo   --log-level LEVEL    Set logging level (DEBUG^|INFO^|WARNING^|ERROR, default: INFO)
@@ -103,11 +103,7 @@ goto :eof
 REM Parameters: %1=level, %2=message
 set "log_level=%~1"
 set "log_msg=%~2"
-set "timestamp="
-
-REM Get current timestamp
-for /f "tokens=2 delims==" %%i in ('wmic OS Get localdatetime /value') do set "dt=%%i"
-set "timestamp=%dt:~0,4%-%dt:~4,2%-%dt:~6,2% %dt:~8,2%:%dt:~10,2%:%dt:~12,2%"
+set "timestamp=%date% %time%"
 
 REM Format message
 set "formatted_msg=%timestamp% - %log_level% - %log_msg%"
@@ -246,11 +242,12 @@ if !conversion_result! equ 0 (
         set /a "FAILED_COUNT+=1"
         exit /b 1
     )
-) else (
+    ) else (
     call :log_message "ERROR" "FFmpeg conversion failed with error code: !conversion_result!"
     set /a "FAILED_COUNT+=1"
     exit /b 1
 )
+goto :eof
 
 :verify_output_file
 REM Parameters: %1=output_file, %2=input_file
@@ -282,7 +279,6 @@ exit /b 0
 
 :is_video_file
 REM Parameters: %1=file_path
-set "file_path=%~1"
 set "file_ext=%~x1"
 
 for %%e in (%VIDEO_EXTENSIONS%) do (
@@ -290,11 +286,28 @@ for %%e in (%VIDEO_EXTENSIONS%) do (
 )
 exit /b 1
 
+:compute_output_path
+REM Parameters: %1=source file, %2=input root directory
+REM Sets OUTPUT_FILE
+set "src_file=%~1"
+set "root_dir=%~2"
+if defined OUTPUT_PATH (
+    set "rel_path=!src_file!"
+    if /i not "!rel_path:%root_dir%\=!"=="!rel_path!" (
+        set "rel_path=!rel_path:%root_dir%\=!"
+    ) else if /i not "!rel_path:%root_dir%=!"=="!rel_path!" (
+        set "rel_path=!rel_path:%root_dir%=!"
+    )
+    for %%o in ("!rel_path!") do set "OUTPUT_FILE=%OUTPUT_PATH%\%%~dpnf.%CONTAINER%"
+) else (
+    for %%o in ("!src_file!") do set "OUTPUT_FILE=%%~dpnf.%CONTAINER%"
+)
+goto :eof
+
 :find_video_files
 REM Parameters: %1=directory, %2=recursive_flag
 set "search_dir=%~1"
 set "recursive_flag=%~2"
-set "found_files="
 
 if not exist "%search_dir%" (
     call :log_message "ERROR" "Directory does not exist: %search_dir%"
@@ -304,24 +317,26 @@ if not exist "%search_dir%" (
 call :log_message "INFO" "Scanning for video files in: %search_dir%"
 
 if "%recursive_flag%"=="1" (
-    REM Recursive search
     for /r "%search_dir%" %%f in (*.*) do (
         call :is_video_file "%%f"
         if !errorlevel! equ 0 (
             set /a "TOTAL_FILES+=1"
             call :log_message "DEBUG" "Found video file: %%f"
-            call :convert_single_file "%%f" "%%~dpnf.%CONTAINER%"
+            set "src_file=%%f"
+            call :compute_output_path "%%f" "%search_dir%"
+            call :convert_single_file "%%f" "!OUTPUT_FILE!"
         )
     )
 ) else (
-    REM Non-recursive search
     for %%f in ("%search_dir%\*.*") do (
         if exist "%%f" (
             call :is_video_file "%%f"
             if !errorlevel! equ 0 (
                 set /a "TOTAL_FILES+=1"
                 call :log_message "DEBUG" "Found video file: %%f"
-                call :convert_single_file "%%f" "%%~dpnf.%CONTAINER%"
+                set "src_file=%%f"
+                call :compute_output_path "%%f" "%search_dir%"
+                call :convert_single_file "%%f" "!OUTPUT_FILE!"
             )
         )
     )
@@ -521,6 +536,9 @@ if defined INPUT_FILE (
     )
 ) else if defined INPUT_DIR (
     REM Directory batch conversion
+    if defined MAX_WORKERS if not "%MAX_WORKERS%"=="0" (
+        call :log_message "INFO" "Note: -c is ignored; batch conversion runs sequentially"
+    )
     call :convert_directory "%INPUT_DIR%"
     
     if %FAILED_COUNT% equ 0 (

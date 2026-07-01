@@ -21,7 +21,6 @@ import logging
 import multiprocessing
 import os
 import platform
-# shutil removed as it's not needed
 import subprocess
 import sys
 import threading
@@ -87,7 +86,9 @@ def setup_logging(
         # File handler (optional)
         if log_file:
             try:
-                os.makedirs(os.path.dirname(log_file), exist_ok=True)
+                log_dir = os.path.dirname(log_file)
+                if log_dir:
+                    os.makedirs(log_dir, exist_ok=True)
                 file_handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
                 file_handler.setLevel(logging.DEBUG)
                 file_handler.setFormatter(detailed_formatter)
@@ -265,16 +266,14 @@ class VideoConverter:
             self.logger.error(f"Unexpected error getting video info: {e}")
             return None
 
-    def _update_stats(
-        self,
-        attempted: bool = False,
-        successful: bool = False,
-        processing_time: float = 0.0,
-    ) -> None:
-        """Thread-safe stats update."""
+    def _record_attempt(self) -> None:
+        """Thread-safe increment of conversion attempts."""
         with self._stats_lock:
-            if attempted:
-                self._stats["conversions_attempted"] += 1
+            self._stats["conversions_attempted"] += 1
+
+    def _record_result(self, successful: bool, processing_time: float = 0.0) -> None:
+        """Thread-safe record of a completed conversion."""
+        with self._stats_lock:
             if successful:
                 self._stats["conversions_successful"] += 1
             else:
@@ -307,7 +306,7 @@ class VideoConverter:
         with self._conversion_lock:
             self.logger.info(f"Starting conversion of: {input_file}")
 
-        self._update_stats(attempted=True)
+        self._record_attempt()
 
         try:
             # Validate input
@@ -391,11 +390,11 @@ class VideoConverter:
                         f"Conversion successful: {output_file} "
                         f"({processing_time:.2f}s)"
                     )
-                    self._update_stats(successful=True, processing_time=processing_time)
+                    self._record_result(True, processing_time)
                     return True
                 else:
                     self.logger.error("Output file verification failed")
-                    self._update_stats(processing_time=processing_time)
+                    self._record_result(False, processing_time)
                     return False
             else:
                 error_msg = (
@@ -404,7 +403,7 @@ class VideoConverter:
                 self.logger.error(
                     f"FFmpeg conversion failed (code {process.returncode}): {error_msg}"
                 )
-                self._update_stats(processing_time=processing_time)
+                self._record_result(False, processing_time)
                 return False
 
         except subprocess.TimeoutExpired:
@@ -412,12 +411,12 @@ class VideoConverter:
             self.logger.error(
                 f"Conversion timeout after {processing_time:.2f}s: {input_file}"
             )
-            self._update_stats(processing_time=processing_time)
+            self._record_result(False, processing_time)
             return False
         except Exception as e:
             processing_time = time.time() - start_time
             self.logger.error(f"Conversion failed with exception: {e}")
-            self._update_stats(processing_time=processing_time)
+            self._record_result(False, processing_time)
             return False
 
     def _log_video_info(self, video_info: VideoInfo) -> None:
@@ -664,7 +663,7 @@ class BatchConverter:
                 completed += 1
 
                 try:
-                    success = future.result(timeout=60)
+                    success = future.result(timeout=3700)
                     if success:
                         results["successful"] += 1
                     else:
@@ -691,13 +690,21 @@ def create_argument_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
   %(prog)s -f input.dav -o output.mkv
-  %(prog)s -d ./videos --container mp4 --recursive
+  %(prog)s -d ./videos -o ./out --container mp4 --recursive
+  %(prog)s input.dav output_folder --container mp4
   %(prog)s -f video.avi --log-level DEBUG --log-file conversion.log
         """,
     )
 
+    parser.add_argument(
+        "positional",
+        nargs="*",
+        metavar="PATH",
+        help="Optional positional: input path [output folder] (alternative to -f/-d)",
+    )
+
     # Input specification (mutually exclusive)
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument("-f", "--file", help="Single video file to convert")
     input_group.add_argument(
         "-d", "--directory", help="Directory containing video files to convert"
@@ -758,10 +765,44 @@ Examples:
     return parser
 
 
+def resolve_input_arguments(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> argparse.Namespace:
+    """Resolve positional input paths when -f/-d flags are not used."""
+    if args.file or args.directory:
+        if args.positional:
+            parser.error(
+                "Cannot combine positional paths with -f/--file or -d/--directory"
+            )
+        return args
+
+    if not args.positional:
+        parser.error(
+            "An input path is required: use -f/--file, -d/--directory, "
+            "or provide a positional path"
+        )
+
+    input_path = Path(args.positional[0])
+    if len(args.positional) > 2:
+        parser.error("Too many positional arguments (expected: input [output])")
+    if len(args.positional) > 1 and args.output:
+        parser.error("Cannot specify both positional output and -o/--output")
+
+    if len(args.positional) > 1:
+        args.output = args.positional[1]
+
+    if input_path.is_dir():
+        args.directory = str(input_path)
+    else:
+        args.file = str(input_path)
+
+    return args
+
+
 def main() -> int:
     """Main application entry point."""
     parser = create_argument_parser()
-    args = parser.parse_args()
+    args = resolve_input_arguments(parser, parser.parse_args())
 
     # Setup logging
     logger = setup_logging(args.log_level, args.log_file)
