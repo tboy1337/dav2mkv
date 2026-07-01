@@ -213,8 +213,10 @@ parse_arguments() {
             --log-file)
                 [[ -z "${2:-}" ]] && die "Option $1 requires an argument"
                 LOG_FILE="$2"
-                # Create log directory if it doesn't exist
-                mkdir -p "$(dirname "$LOG_FILE")"
+                log_dir=$(dirname "$LOG_FILE")
+                if [[ -n "$log_dir" && "$log_dir" != "." ]]; then
+                    mkdir -p "$log_dir"
+                fi
                 shift 2
                 ;;
             --verbose)
@@ -393,98 +395,110 @@ verify_output_file() {
     return 0
 }
 
+# Statistics for batch directory mode
+BATCH_TOTAL=0
+
+# Uppercase container name (portable across Bash 3.2+)
+container_upper() {
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+# Run FFmpeg conversion without updating global statistics
+perform_conversion() {
+    local input_file="$1"
+    local output_file="$2"
+
+    if [[ ! -f "$input_file" ]]; then
+        log_error "Input file not found: $input_file"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$output_file")"
+
+    if [[ -f "$output_file" && "$OVERWRITE" != "true" ]]; then
+        log_warning "Output file exists and overwrite disabled: $output_file"
+        return 1
+    fi
+
+    log_info "Analyzing video file: $input_file"
+    get_video_info "$input_file" || log_warning "Could not retrieve video information"
+
+    local container_label
+    container_label=$(container_upper "$CONTAINER")
+    log_info "Converting to ${container_label}: $input_file -> $output_file"
+
+    local ffmpeg_cmd=(
+        ffmpeg
+        -i "$input_file"
+        -c copy
+        -map 0
+        -avoid_negative_ts make_zero
+        -fflags +genpts
+    )
+
+    if [[ "$OVERWRITE" == "true" ]]; then
+        ffmpeg_cmd+=(-y)
+    else
+        ffmpeg_cmd+=(-n)
+    fi
+
+    ffmpeg_cmd+=("$output_file")
+
+    log_debug "Running FFmpeg command: ${ffmpeg_cmd[*]}"
+
+    local ffmpeg_output
+    ffmpeg_output=$(mktemp)
+    local exit_code=0
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 3600 "${ffmpeg_cmd[@]}" >"$ffmpeg_output" 2>&1 || exit_code=$?
+    else
+        "${ffmpeg_cmd[@]}" >"$ffmpeg_output" 2>&1 || exit_code=$?
+    fi
+
+    if [[ $exit_code -eq 0 ]]; then
+        if verify_output_file "$output_file" "$input_file"; then
+            log_info "Conversion successful: $output_file"
+            rm -f "$ffmpeg_output"
+            return 0
+        fi
+        log_error "Output file verification failed"
+        exit_code=1
+    else
+        local error_output
+        error_output=$(tail -n 10 "$ffmpeg_output" 2>/dev/null || echo "No error details available")
+
+        if [[ $exit_code -eq 124 ]]; then
+            log_error "Conversion timeout: $input_file"
+        else
+            log_error "FFmpeg conversion failed (code $exit_code): $error_output"
+        fi
+    fi
+
+    rm -f "$ffmpeg_output"
+    return "$exit_code"
+}
+
 # Convert a single video file
 convert_video() {
     local input_file="$1"
     local output_file="$2"
     local start_time
     start_time=$(date +%s)
-    
+
     log_info "Starting conversion of: $input_file"
     ((CONVERSIONS_ATTEMPTED++))
-    
-    # Validate input
-    if [[ ! -f "$input_file" ]]; then
-        log_error "Input file not found: $input_file"
-        ((CONVERSIONS_FAILED++))
-        return 1
-    fi
-    
-    # Create output directory if needed
-    mkdir -p "$(dirname "$output_file")"
-    
-    # Check if output exists and overwrite setting
-    if [[ -f "$output_file" && "$OVERWRITE" != "true" ]]; then
-        log_warning "Output file exists and overwrite disabled: $output_file"
-        ((CONVERSIONS_FAILED++))
-        return 1
-    fi
-    
-    # Get and log video information
-    log_info "Analyzing video file: $input_file"
-    get_video_info "$input_file" || log_warning "Could not retrieve video information"
-    
-    # Perform the conversion
-    log_info "Converting to ${CONTAINER^^}: $input_file -> $output_file"
-    
-    local ffmpeg_cmd=(
-        ffmpeg
-        -i "$input_file"
-        -c copy                    # Copy all streams without re-encoding
-        -map 0                     # Include all streams from input
-        -avoid_negative_ts make_zero  # Handle timestamp issues
-        -fflags +genpts           # Generate presentation timestamps
-    )
-    
-    if [[ "$OVERWRITE" == "true" ]]; then
-        ffmpeg_cmd+=(-y)          # Overwrite output if exists
-    else
-        ffmpeg_cmd+=(-n)          # Never overwrite
-    fi
-    
-    ffmpeg_cmd+=("$output_file")
-    
-    log_debug "Running FFmpeg command: ${ffmpeg_cmd[*]}"
-    
-    # Run conversion
-    local ffmpeg_output
-    ffmpeg_output=$(mktemp)
-    local conversion_success=false
-    
-    if timeout 3600 "${ffmpeg_cmd[@]}" >"$ffmpeg_output" 2>&1; then
-        # Verify output file
-        if verify_output_file "$output_file" "$input_file"; then
-            local processing_time
-            processing_time=$(($(date +%s) - start_time))
-            log_info "Conversion successful: $output_file (${processing_time}s)"
-            ((CONVERSIONS_SUCCESSFUL++))
-            conversion_success=true
-        else
-            log_error "Output file verification failed"
-            ((CONVERSIONS_FAILED++))
-        fi
-    else
-        local exit_code=$?
-        local error_output
-        error_output=$(tail -n 10 "$ffmpeg_output" 2>/dev/null || echo "No error details available")
-        
-        if [[ $exit_code -eq 124 ]]; then
-            local processing_time
-            processing_time=$(($(date +%s) - start_time))
-            log_error "Conversion timeout after ${processing_time}s: $input_file"
-        else
-            log_error "FFmpeg conversion failed (code $exit_code): $error_output"
-        fi
-        ((CONVERSIONS_FAILED++))
-    fi
-    
-    rm -f "$ffmpeg_output"
-    
-    if [[ "$conversion_success" == "true" ]]; then
+
+    if perform_conversion "$input_file" "$output_file"; then
+        local processing_time
+        processing_time=$(($(date +%s) - start_time))
+        log_info "Completed in ${processing_time}s"
+        ((CONVERSIONS_SUCCESSFUL++))
         return 0
-    else
-        return 1
     fi
+
+    ((CONVERSIONS_FAILED++))
+    return 1
 }
 
 # Check if file has video extension
@@ -541,94 +555,96 @@ find_video_files() {
     return 0
 }
 
+# Wait for one background job and update statistics
+wait_for_job() {
+    local pid="$1"
+    local exit_code=0
+
+    wait "$pid" || exit_code=$?
+    ((CONVERSIONS_ATTEMPTED++))
+    if [[ $exit_code -eq 0 ]]; then
+        ((CONVERSIONS_SUCCESSFUL++))
+    else
+        ((CONVERSIONS_FAILED++))
+    fi
+    return 0
+}
+
 # Convert directory with parallel processing
 convert_directory() {
     local input_dir="$1"
     local output_dir="$2"
     local workers="$3"
-    
-    # Set default output directory
+
+    input_dir="${input_dir%/}"
+
     if [[ -z "$output_dir" ]]; then
         output_dir="$input_dir"
     else
         mkdir -p "$output_dir"
     fi
-    
+
+    local container_label
+    container_label=$(container_upper "$CONTAINER")
     log_info "Starting batch conversion: $input_dir -> $output_dir"
-    log_info "Container: ${CONTAINER^^}, Workers: $workers"
-    
-    # Find all video files
+    log_info "Container: ${container_label}, Workers: $workers"
+
     local -a video_files=()
     while IFS= read -r file; do
         [[ -n "$file" ]] && video_files+=("$file")
     done < <(find_video_files "$input_dir" "$RECURSIVE")
-    
+
+    BATCH_TOTAL=${#video_files[@]}
+
     if [[ ${#video_files[@]} -eq 0 ]]; then
         log_warning "No video files found to convert"
         return 0
     fi
-    
+
     log_info "Processing ${#video_files[@]} files with $workers workers"
-    
-    # Process files with parallel execution
+
     local -a pids=()
-    local active_jobs=0
     local completed=0
-    
+
     for video_file in "${video_files[@]}"; do
-        # Calculate output file path
         local output_file
         if [[ "$output_dir" != "$input_dir" ]]; then
-            # Preserve directory structure in different output directory
             local relative_path
             relative_path="${video_file#$input_dir/}"
             output_file="$output_dir/${relative_path%.*}.$CONTAINER"
         else
-            # Same directory, just change extension
             output_file="${video_file%.*}.$CONTAINER"
         fi
-        
-        # Start conversion in background
-        (
-            convert_video "$video_file" "$output_file"
-            echo "$?" > "/tmp/${SCRIPT_NAME}_result_$$_$BASHPID"
-        ) &
-        
-        pids+=($!)
-        ((active_jobs++))
-        
-        # Wait if we've reached the worker limit
-        if [[ $active_jobs -ge $workers ]]; then
-            # Wait for at least one job to complete
-            wait -n
-            ((active_jobs--))
-            ((completed++))
-            
-            # Check for completed jobs
+
+        while [[ ${#pids[@]} -ge $workers ]]; do
             local -a remaining_pids=()
+            local pid
             for pid in "${pids[@]}"; do
                 if kill -0 "$pid" 2>/dev/null; then
                     remaining_pids+=("$pid")
+                else
+                    wait_for_job "$pid"
+                    ((completed++))
+                    log_info "Progress: $completed/${#video_files[@]} files processed (${CONVERSIONS_SUCCESSFUL} successful, ${CONVERSIONS_FAILED} failed)"
                 fi
             done
             pids=("${remaining_pids[@]}")
-            
-            log_info "Progress: $completed/${#video_files[@]} files processed (${CONVERSIONS_SUCCESSFUL} successful, ${CONVERSIONS_FAILED} failed)"
-        fi
+            [[ ${#pids[@]} -ge $workers ]] && sleep 0.2
+        done
+
+        perform_conversion "$video_file" "$output_file" &
+        pids+=($!)
     done
-    
-    # Wait for all remaining jobs to complete
+
+    local pid
     for pid in "${pids[@]}"; do
         if kill -0 "$pid" 2>/dev/null; then
-            wait "$pid"
+            wait_for_job "$pid"
             ((completed++))
             log_info "Progress: $completed/${#video_files[@]} files processed (${CONVERSIONS_SUCCESSFUL} successful, ${CONVERSIONS_FAILED} failed)"
         fi
     done
-    
-    # Clean up result files
-    rm -f /tmp/${SCRIPT_NAME}_result_$$_*
-    
+
     log_info "Batch conversion completed"
     return 0
 }
@@ -703,7 +719,7 @@ main() {
         convert_directory "$INPUT_DIR" "$OUTPUT" "$MAX_WORKERS"
         
         # Log final results
-        log_info "Final results: Total=${#video_files[@]:-0}, Successful=$CONVERSIONS_SUCCESSFUL, Failed=$CONVERSIONS_FAILED"
+        log_info "Final results: Total=$BATCH_TOTAL, Successful=$CONVERSIONS_SUCCESSFUL, Failed=$CONVERSIONS_FAILED"
         log_info "Converter stats: Attempted=$CONVERSIONS_ATTEMPTED, Successful=$CONVERSIONS_SUCCESSFUL, Failed=$CONVERSIONS_FAILED"
         
         # Return appropriate exit code
