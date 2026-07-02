@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dav2mkv"
-version = "1.0.3"
+version = "1.0.4"
 description = "Convert DAV/video files to MKV/MP4 via FFmpeg stream copy"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,7 +14,7 @@ authors = [
     { name = "tboy1337" },
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: End Users/Desktop",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -110,12 +110,6 @@ sections = [
     "FIRSTPARTY",
     "LOCALFOLDER",
 ]
-
-[tool.hypothesis]
-max_examples = 100
-deadline = 30000
-derandomize = false
-print_blob = true
 
 [tool.bandit]
 exclude_dirs = ["tests"]
